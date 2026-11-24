@@ -1,0 +1,145 @@
+#include <stdio.h>
+#include <mysql.h>
+#include <string.h>
+
+MYSQL *conn;
+
+void connectDB() {
+    conn = mysql_init(NULL);
+    if (mysql_real_connect(conn, "localhost", "root", "Mysql@2026", "hospital_db", 3306, NULL, 0) == NULL) {
+        printf("Connection Failed: %s\n", mysql_error(conn));
+        return;
+    }
+    printf("Connected to MySQL Successfully!\n");
+}
+
+// 1. PATIENT MODULE
+void addPatient() {
+    int id, age; char name[50], disease[50], query[500];
+    printf("\nEnter Patient ID: "); scanf("%d", &id);
+    printf("Enter Name: "); scanf("%s", name);
+    printf("Enter Age: "); scanf("%d", &age);
+    printf("Enter Disease: "); scanf("%s", disease);
+    sprintf(query, "INSERT INTO patients(id, name, age, disease) VALUES(%d, '%s', %d, '%s')", id, name, age, disease);
+    if(mysql_query(conn, query)) printf("Failed: %s\n", mysql_error(conn));
+    else printf("Patient Added!\n");
+}
+
+void viewPatients() {
+    mysql_query(conn, "SELECT * FROM patients");
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row;
+    printf("\n--- Patients ---\n");
+    while((row = mysql_fetch_row(res)))
+        printf("ID:%s | Name:%s | Age:%s | Disease:%s\n", row[0], row[1], row[2], row[3]);
+    mysql_free_result(res);
+}
+
+void searchPatient() {
+    int id; char query[200];
+    printf("\nEnter ID to Search: "); scanf("%d", &id);
+    sprintf(query, "SELECT * FROM patients WHERE id=%d", id);
+    mysql_query(conn, query);
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if(row) printf("Found: ID:%s Name:%s Age:%s Disease:%s\n", row[0], row[1], row[2], row[3]);
+    else printf("Not Found!\n");
+    mysql_free_result(res);
+}
+
+void deletePatient() {
+    int id; char query[200];
+    printf("\nEnter ID to Delete: "); scanf("%d", &id);
+    sprintf(query, "DELETE FROM patients WHERE id=%d", id);
+    mysql_query(conn, query);
+    printf("Patient Deleted!\n");
+}
+
+// 2. DOCTOR MODULE
+void addDoctor() {
+    int id; char name[50], spec[50], query[500];
+    printf("\nEnter Doctor ID: "); scanf("%d", &id);
+    printf("Enter Doctor Name: "); scanf("%s", name);
+    printf("Enter Specialization: "); scanf("%s", spec);
+    sprintf(query, "INSERT INTO doctors(id, name, specialization) VALUES(%d, '%s', '%s')", id, name, spec);
+    if(mysql_query(conn, query)) printf("Failed: %s\n", mysql_error(conn));
+    else printf("Doctor Added!\n");
+}
+
+void viewDoctors() {
+    mysql_query(conn, "SELECT * FROM doctors");
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row;
+    printf("\n--- Doctors ---\n");
+    while((row = mysql_fetch_row(res)))
+        printf("ID:%s | Name:%s | Spec:%s\n", row[0], row[1], row[2]);
+    mysql_free_result(res);
+}
+
+// 3. APPOINTMENT MODULE
+void bookAppointment() {
+    int pid, did; char date[20], query[500];
+    printf("\nEnter Patient ID: "); scanf("%d", &pid);
+    printf("Enter Doctor ID: "); scanf("%d", &did);
+    printf("Enter Date (YYYY-MM-DD): "); scanf("%s", date);
+    sprintf(query, "INSERT INTO appointments(patient_id, doctor_id, date) VALUES(%d, %d, '%s')", pid, did, date);
+    if(mysql_query(conn, query)) printf("Failed: %s\n", mysql_error(conn));
+    else printf("Appointment Booked!\n");
+}
+
+void viewAppointments() {
+    mysql_query(conn, "SELECT * FROM appointments");
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row;
+    printf("\n--- Appointments ---\n");
+    while((row = mysql_fetch_row(res)))
+        printf("ApptID:%s | PatientID:%s | DoctorID:%s | Date:%s\n", row[0], row[1], row[2], row[3]);
+    mysql_free_result(res);
+}
+
+// 4. BILLING MODULE
+void addBilling() {
+    int pid, amount; char query[500];
+    printf("\nEnter Patient ID: "); scanf("%d", &pid);
+    printf("Enter Amount: "); scanf("%d", &amount);
+    sprintf(query, "INSERT INTO billing(patient_id, amount) VALUES(%d, %d)", pid, amount);
+    if(mysql_query(conn, query)) printf("Failed: %s\n", mysql_error(conn));
+    else printf("Bill Added!\n");
+}
+
+void viewBilling() {
+    mysql_query(conn, "SELECT * FROM billing");
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row;
+    printf("\n--- Billing ---\n");
+    while((row = mysql_fetch_row(res)))
+        printf("BillID:%s | PatientID:%s | Amount:%s\n", row[0], row[1], row[2]);
+    mysql_free_result(res);
+}
+
+int main() {
+    int choice;
+    connectDB();
+    while(1) {
+        printf("\n===== HOSPITAL MANAGEMENT - ALL MODULES =====\n");
+        printf("1. Add Patient\n2. View Patients\n3. Search Patient\n4. Delete Patient\n");
+        printf("5. Add Doctor\n6. View Doctors\n");
+        printf("7. Book Appointment\n8. View Appointments\n");
+        printf("9. Add Bill\n10. View Bills\n11. Exit\n");
+        printf("Enter Choice: "); scanf("%d", &choice);
+        if(choice==1) addPatient();
+        else if(choice==2) viewPatients();
+        else if(choice==3) searchPatient();
+        else if(choice==4) deletePatient();
+        else if(choice==5) addDoctor();
+        else if(choice==6) viewDoctors();
+        else if(choice==7) bookAppointment();
+        else if(choice==8) viewAppointments();
+        else if(choice==9) addBilling();
+        else if(choice==10) viewBilling();
+        else if(choice==11) break;
+        else printf("Invalid!\n");
+    }
+    mysql_close(conn);
+    return 0;
+}
