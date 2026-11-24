@@ -1,0 +1,88 @@
+#include <stdio.h>
+#include <mysql.h>
+#include <string.h>
+
+MYSQL *conn;
+
+void connectDB() {
+    conn = mysql_init(NULL);
+    if (conn == NULL) {
+        printf("MySQL Init Failed!\n");
+        return;
+    }
+    if (mysql_real_connect(conn, "localhost", "root", "Mysql@2026", "hospital_db", 3306, NULL, 0) == NULL) {
+        printf("Connection Failed: %s\n", mysql_error(conn));
+        mysql_close(conn);
+        return;
+    }
+    printf("Connected to MySQL Successfully!\n");
+}
+
+void addPatient() {
+    int id, age;
+    char name[50], disease[50], query[500];
+    printf("\nEnter ID: ");
+    scanf("%d", &id);
+    printf("Enter Name: ");
+    scanf("%s", name);
+    printf("Enter Age: ");
+    scanf("%d", &age);
+    printf("Enter Disease: ");
+    scanf("%s", disease);
+
+    sprintf(query, "INSERT INTO patients(id, name, age, disease) VALUES(%d, '%s', %d, '%s')", id, name, age, disease);
+    if (mysql_query(conn, query)) {
+        printf("Insert Failed: %s\n", mysql_error(conn));
+    } else {
+        printf("Patient Added Successfully!\n");
+    }
+}
+
+void viewPatients() {
+    if (mysql_query(conn, "SELECT * FROM patients")) {
+        printf("Select Failed: %s\n", mysql_error(conn));
+        return;
+    }
+    MYSQL_RES *res = mysql_store_result(conn);
+    MYSQL_ROW row;
+    printf("\n--- Patient List ---\n");
+    while ((row = mysql_fetch_row(res))) {
+        printf("ID: %s | Name: %s | Age: %s | Disease: %s\n", row[0], row[1], row[2], row[3]);
+    }
+    mysql_free_result(res);
+}
+
+void deletePatient() {
+    int id;
+    char query[200];
+    printf("\nEnter ID to Delete: ");
+    scanf("%d", &id);
+    sprintf(query, "DELETE FROM patients WHERE id=%d", id);
+    if (mysql_query(conn, query)) {
+        printf("Delete Failed: %s\n", mysql_error(conn));
+    } else {
+        printf("Patient Deleted!\n");
+    }
+}
+
+int main() {
+    int choice;
+    connectDB();
+    while(1) {
+        printf("\n===== HOSPITAL MANAGEMENT (MySQL) =====\n");
+        printf("1. Add Patient\n");
+        printf("2. View Patients\n");
+        printf("3. Delete Patient\n");
+        printf("4. Exit\n");
+        printf("Enter Choice: ");
+        scanf("%d", &choice);
+
+        if(choice == 1) addPatient();
+        else if(choice == 2) viewPatients();
+        else if(choice == 3) deletePatient();
+        else if(choice == 4) break;
+        else printf("Invalid Choice!\n");
+    }
+    mysql_close(conn);
+    return 0;
+}
